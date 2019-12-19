@@ -1,0 +1,43 @@
+---
+title: "Project 1"
+author: "Harish Sundaram"
+date: "October 20, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{R}
+library(knitr)
+library(ggplot2)
+library(dplyr)
+library(devtools)
+library(tidyverse)
+library(tidyr)
+```
+
+  The three datasets that I have decided to work with are states populations, states areas, and states abbreviations. The population data set contains the population of those under 18 and the total population of the state. The area data set gives the area in square miles for each state. The regions data set list the regions that each state is located in. I found 2 datasets online from a website contaning multiple data sets for states(kaggle). I made the regions dataset in excel becasue i coudnt find a pre existting dataset.
+  I chose this dataset because I was interested in the relationship between size of the state, the regions they are located and the population size. Im not exactly sure what to expect because some smaller states like NJ have larger populations than many of the bigger states.
+
+##Joining/Tidying the datasets
+
+In the coded below I wanted to seperate pop. under 18 and total into two different columns, so  I used the pivot wider function and R knows how to seperate the two variables after inputing the two columns names.
+Next I used left join to merge all 3 datasets into one. It didnt matter which join I used because all 3 datasets have the exact same number of rows per each state, so no data is being removed.
+
+
+```{r}
+States_population %>% pivot_wider(names_from = "Age", values_from = "Population") -> popState
+state_regions %>% left_join(state_areas) %>% left_join(popState)
+
+```
+
+##Wrangling
+
+```{r}
+fullDataSet %>% mutate(popdensity = Area..sq..mi./total)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
