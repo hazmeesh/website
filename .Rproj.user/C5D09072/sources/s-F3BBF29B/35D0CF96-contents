@@ -1,0 +1,104 @@
+---
+title: "Project 1"
+author: "Harish Sundaram"
+EID : "HMS2526"
+date: "10/20/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+#install.packages("tidyr")
+#install.packages("tidyverse")
+#install.packages("devtools")
+#install.packages("dplyr")
+#install.packages("knitr")
+#install.packages("ggplot2")
+library(ggplot2)
+library(dplyr)
+library(devtools)
+library(tidyverse)
+library(tidyr)
+
+#state_areas <- read_xlsx("~/state_areas.xlsx")
+
+state_areas <- read.csv("~/state_areas.csv")
+
+#state_regions <- read_xlsx("~/state_regions.xlsx")
+
+state_regions <- read.csv("~/state_regions.csv")
+
+#States_population <- read_xlsx("~/States_population.xlsx")
+
+States_population <- read.csv("~/States_population.csv")
+```
+
+  The three datasets that I have decided to work with are states populations, states areas, and states regions. The population data set contains the population of those under 18 and the total population of the state. The area data set gives the area in square miles for each state. The regions data set list the regions that each state is located in. I found 2 datasets online from a website contaning multiple data sets for states(kaggle). I made the regions dataset in excel becasue i coudnt find a pre existting dataset.
+  I chose this dataset because I was interested in the relationship between size of the state, the regions they are located and the population size. Im not exactly sure what to expect because some smaller states like NJ have larger populations than many of the bigger states.
+
+##Joining/Tidying the datasets
+
+In the code below I wanted to seperate pop. under 18 and total into two different columns, so  I used the pivot wider function and R knows how to seperate the two variables after inputing the two columns names.
+Next I used left join to merge all 3 datasets into one. It didnt matter which join I used because all 3 datasets have the exact same number of rows per each state, so no data is being removed.
+
+```{R}
+States_population %>% pivot_wider(names_from = "Age", values_from = "Population") ->popState
+state_regions %>% left_join(state_areas) %>% left_join(popState) -> fullDataSet
+
+
+```
+
+##Wrangling
+
+  The first thing I wanted to see was population density so I used mutate to create a new cloumn named popdensity and divided the area of each state by the total population to see population density per square mile.
+  Next I used summarize to calculate the mean of all three numeric variables and then grouped by region and found the mean of all three numeric variables based on region. I used filter on the total populations mean that was grouped by region, so only the mean of New England was returned. I used arrange on the mean of the under 18 population that was grouped by region, so the regions were in alphabetical order. After that I used summarize all and min/max to find out the highest numeric variables for each category and found the min and max of each region. Lastly I used n distinct on regions to see the different regions in the dataset.
+
+```{r}
+fullDataSet %>% mutate(popdensity = total/Area..sq..mi.)
+
+fullDataSet %>% summarize(mean(Area..sq..mi.))
+fullDataSet %>% summarize(mean(total))
+fullDataSet %>% summarize(mean(`pop. under 18`))
+fullDataSet %>% group_by(Region) %>% summarize(mean(Area..sq..mi.))
+fullDataSet %>% group_by(Region) %>% summarize(mean(total)) %>% filter(Region == "New England")
+fullDataSet %>% group_by(Region) %>% summarize(mean(`pop. under 18`)) %>% arrange(Region)
+fullDataSet %>% select_if(is.numeric) %>% summarize_all(max)
+fullDataSet %>% select_if(is.numeric) %>% summarize_all(min)
+fullDataSet %>% group_by(Region) %>% select_if(is.numeric) %>% summarise_all(max)
+fullDataSet %>% group_by(Region) %>% select_if(is.numeric) %>% summarise_all(min)
+fullDataSet %>% summarise(n_distinct(Region))
+
+```
+
+##Visualizing 
+
+  For graph number one I made a scatter plot using the population under 18 and the total population and made the colors of the points correlate with the region of the state. I changed the layout of the ticks and the size/shape of the points. From this data you can see the the population of under 18 to the total population is proportionally the same among all states and regions.
+  For the second graph I made a Bar Plot using the area of each state and the total population and changed the color to show each state. I changed the layout of the ticks once again.This graph shows the amount of area compared to the number of people living in each state. From this data you can see that the size of a state does not determine its population size.
+
+```{r}
+fullDataSet %>% ggplot(aes(`pop. under 18`,total,col=Region)) + geom_point(size = 1, shape = 7) + ggtitle("Population under 18 vs Total Population") + labs(x = "Total Population", y = "Under 18 Population") + theme(axis.text.x = element_text(face="bold", color="red", size=14), axis.text.y = element_text(face="bold", color="red", size=14))
+
+fullDataSet %>% ggplot(aes(total, Area..sq..mi., col=State)) + geom_bar(stat = "identity", size = 2) + ggtitle("Total Population vs Area") + labs(x = "Total Population", y = "Area of Each State(sq.mi)") + theme(axis.text.x = element_text( color="blue", size=10), axis.text.y = element_text(color="blue", size=10))
+```
+
+
+##Dimensionality Reduction
+
+
+
+```{r}
+hold <- fullDataSet %>% select_if(is.numeric) %>% scale
+data_pca <- princomp(hold)
+names(data_pca)
+summary(data_pca, loadings=T)
+
+eigval <- data_pca$sdev^2
+varprop=round(eigval/sum(eigval),2)
+
+ggplot()+geom_bar(aes(y=varprop,x=1:3),stat="identity")+xlab("")+geom_path(aes(y=varprop,x=1:3))+  geom_text(aes(x=1:3,y=varprop,label=round(varprop,2)),vjust=1,col="white",size=5)+  scale_y_continuous(breaks=seq(0,.6,.2),labels = scales::percent)+  scale_x_continuous(breaks=1:5)
+
+```
+
+
+
